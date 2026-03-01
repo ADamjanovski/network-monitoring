@@ -2,6 +2,7 @@ package org.example.jobs;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
@@ -12,15 +13,12 @@ import org.example.windowsFunctions.FaultDetectionFunction;
 import org.example.utils.MeasurementDeserializer;
 import org.example.models.Measurement;
 import org.example.models.FaultAlert;
+import org.example.models.configuration.AppConfig;
 
 import java.time.Duration;
 
 public class SimpleFaultDetectionJob {
     
-    private static final String KAFKA_BOOTSTRAP_SERVERS = "localhost:9092";
-    private static final String INPUT_TOPIC = "pmu-measurements";
-    private static final String OUTPUT_TOPIC = "fault-alerts";
-    private static final String CONSUMER_GROUP = "fault-detection-consumer";
     private static final String JOB_NAME = "Simple-Fault-Detection";
     
     public static void main(String[] args) throws Exception {
@@ -31,25 +29,22 @@ public class SimpleFaultDetectionJob {
         System.out.println("Starting Flink Job: " + JOB_NAME);
         
         KafkaSource<String> source = KafkaSource.<String>builder()
-            .setBootstrapServers(KAFKA_BOOTSTRAP_SERVERS)
-            .setTopics(INPUT_TOPIC)
-            .setGroupId(CONSUMER_GROUP)
+            .setBootstrapServers(AppConfig.KAFKA_BOOTSTRAP_SERVERS)
+            .setTopics(AppConfig.INPUT_TOPIC)
             .setStartingOffsets(OffsetsInitializer.latest())
             .setValueOnlyDeserializer(new SimpleStringSchema())
             .build();
         
         KafkaSink<String> sink = KafkaSink.<String>builder()
-            .setBootstrapServers(KAFKA_BOOTSTRAP_SERVERS)
+            .setBootstrapServers(AppConfig.KAFKA_BOOTSTRAP_SERVERS)
             .setRecordSerializer(
                 KafkaRecordSerializationSchema.builder()
-                    .setTopic(OUTPUT_TOPIC)
+                    .setTopic(AppConfig.FAULT_ALERTS_TOPIC)
                     .setValueSerializationSchema(new SimpleStringSchema())
                     .build()
             )
             .setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
             .build();
-        
-        
 
         DataStream<String> rawStream = env.fromSource(
             source,

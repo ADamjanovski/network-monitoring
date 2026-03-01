@@ -4,8 +4,8 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.util.Collector;
 import org.example.models.Measurement;
 import org.example.models.FaultAlert;
-import org.example.models.AlertType;
-import org.example.models.SeverityLevel;
+import org.example.models.enums.AlertType;
+import org.example.models.enums.SeverityLevel;
 import org.example.models.configuration.AppConfig;
 
 import java.util.UUID;
@@ -63,6 +63,8 @@ public class FaultDetectionFunction implements FlatMapFunction<Measurement, Faul
     }
 
     private double calculateCurrentSeverity(double current, double threshold) {
-        return Math.min(1.0, (current / threshold - 1.0) / 3.0);
+        double severity = (current - AppConfig.NOMINAL_CURRENT) /
+                (AppConfig.OVERCURRENT_THRESHOLD - AppConfig.NOMINAL_CURRENT);
+        return Math.min(1.0, Math.max(0.0, severity));
     }
 }

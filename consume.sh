@@ -1,5 +1,5 @@
 #!/bin/sh
 python -m venv ./venv
-pip install -r requirements.txt
+./venv/Scripts/pip install -r requirements.txt
 docker-compose up -d
-python consume.py
+./venv/Scripts/python consume.py

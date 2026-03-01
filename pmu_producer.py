@@ -53,19 +53,21 @@ class PMUDataProducer:
         
         anomaly_chance =random.random()
 
-        if anomaly_chance < 0.02:
+        if anomaly_chance < 0.005:
             if random.random() < 0.5:
                 voltage_variation = random.uniform(-0.15, -0.11) ## VOLTAGE SAG
             else:
                 voltage_variation = random.uniform(0.11, 0.15) ## VOLTAGE SWELL
             
-            current_variation = random.uniform(800, 1000) 
+        if anomaly_chance < 0.005: 
+            current_variation = random.uniform(400, 900)
             
+        if anomaly_chance < 0.003: 
             if random.random() < 0.5:
-                frequency_variation = random.uniform(-0.25, -0.21) 
+                frequency_variation = random.uniform(-0.25, -0.21)
             else:
                 frequency_variation = random.uniform(0.21, 0.25)
-        
+            
 
 
         voltage = pmu_config['base_voltage'] * (1 + voltage_variation)

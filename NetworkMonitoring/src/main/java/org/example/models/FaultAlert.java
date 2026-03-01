@@ -2,9 +2,13 @@ package org.example.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.models.enums.AlertType;
+import org.example.models.enums.SeverityLevel;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 
 public class FaultAlert implements Serializable {

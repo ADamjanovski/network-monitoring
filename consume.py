@@ -1,7 +1,7 @@
 from kafka import KafkaConsumer
 
 bootstrap_servers = 'localhost:9092'
-topic = 'electricalFaultDetection'
+topic = 'fault-alerts'
 
 consumer = KafkaConsumer(topic,
                          bootstrap_servers=bootstrap_servers,
