@@ -26,7 +26,7 @@ public class SimpleFaultDetectionJob {
     public static void main(String[] args) throws Exception {
         
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.enableCheckpointing(1000);
+        // env.enableCheckpointing(1000);
         
         System.out.println("Starting Flink Job: " + JOB_NAME);
         
@@ -66,7 +66,8 @@ public class SimpleFaultDetectionJob {
             );
                 
         DataStream<FaultAlert> faultAlerts = measurementStream
-            .flatMap(new FaultDetectionFunction());
+                .keyBy(Measurement::getRegion)
+                .flatMap(new FaultDetectionFunction());
 
         faultAlerts.print();    
         faultAlerts.map(FaultAlert::toJson).sinkTo(sink);
