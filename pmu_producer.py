@@ -29,7 +29,7 @@ class PMUDataProducer:
                 
                 for pmu_idx in range(pmus_in_substation):
                     
-                    pmu_id = f"{region}_{substation_name}_PMU{pmu_counter:03d}"
+                    pmu_id = f"{region}_{substation_name}_PMU{(pmu_idx+1):03d}"
 
                     self.pmu_configs.append({
                         'pmu_id': pmu_id,
@@ -94,15 +94,22 @@ class PMUDataProducer:
         last_frequency_update = time.time()
 
         while True:
-            pmu=random.choice(self.pmu_configs)
-            measurement = self.generate_measurement(pmu)
-            self.producer.send(
-                topic=self.topic,
-                value=json.dumps(measurement).encode("utf-8")
-            )
+            now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
 
-            measurement_count += 1
+            for pmu in self.pmu_configs:
+                measurement = self.generate_measurement(pmu)
+                measurement["timestamp"] = now_ms 
+
+                self.producer.send(
+                    topic=self.topic,
+                    value=json.dumps(measurement).encode("utf-8")
+                )
+                print(f"Sent measurement to Kafka: {measurement}")
+                measurement_count += 1
+
             
+            self.producer.flush()
+            print("\n\n\n\n")
             current_time = time.time()
             if current_time - last_frequency_update >= 1.0:
 
@@ -114,7 +121,6 @@ class PMUDataProducer:
                         if random.random() < 0.3:
                             self.system_frequency -= random.uniform(0.02, 0.08)
                             print(f"AFTERSHOCK: extra DROP {self.system_frequency:.3f} Hz")
-
                     else:
                         self.system_frequency += random.uniform(0.1, 0.25)
                         print(f"EVENT: Frequency RAISE {self.system_frequency:.3f} Hz")
@@ -127,27 +133,26 @@ class PMUDataProducer:
                         print(f"AFTERSHOCK: extra DROP {self.system_frequency:.3f} Hz")
 
                 self.system_frequency = max(self.system_frequency, 49.0)
-
                 last_frequency_update = current_time
 
                 if measurement_count % 500 == 0:
                     print(f"SENT: {measurement_count} | FREQUENCY: {self.system_frequency:.4f} Hz")
 
-            time.sleep(random.randint(500, 2000) / 1000.0)
+            time.sleep(random.randint(500, 1500) / 1000.0)
 
 
 
 if __name__ == '__main__':
 
     north_macedonia_regions = {
-        "Skopje": ["Skopje"],
-        "Polog": ["Tetovo"],
-        "Southwestern": ["Ohrid"],
-        "Pelagonia": ["Bitola"],
-        "Vardar": ["Veles"],
-        "Southeastern": ["Strumica"],
-        "Eastern": ["Stip"],
-        "Northeastern": ["Kumanovo"],
+        "Skopje": ["Skopje", "Arachinovo"],
+        "Polog": ["Tetovo", "Gostivar"],
+        "Southwestern": ["Ohrid", "Struga"],
+        "Pelagonia": ["Bitola", "Prilep"],
+        "Vardar": ["Veles", "Kavadarci"],
+        "Southeastern": ["Strumica", "Gevgelija"],
+        "Eastern": ["Stip", "Kocani"],
+        "Northeastern": ["Kumanovo", "Kriva Palanka"],
     }
     producer = PMUDataProducer(
         kafka_bootstrap_servers='localhost:9092',
