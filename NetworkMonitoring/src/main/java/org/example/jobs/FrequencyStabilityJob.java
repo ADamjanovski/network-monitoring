@@ -65,7 +65,7 @@ public class FrequencyStabilityJob {
         DataStream<FrequencyAlert> alerts = measurementStream
                 .keyBy(Measurement::getRegion)
                 .window(SlidingEventTimeWindows.of(
-                        Time.seconds(5), 
+                        Time.seconds(3),
                         Time.seconds(1)
                 ))
                 .process(new FrequencyStabilityWindowFunction());
