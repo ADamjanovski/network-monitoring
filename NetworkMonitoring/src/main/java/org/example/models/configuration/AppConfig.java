@@ -23,8 +23,8 @@ public final class AppConfig {
 
     // Frequency thresholds (App 2)
     public static final double FREQ_WARNING_THRESHOLD   = 0.2;  // ±0.2 Hz
-    public static final double ROCOF_WARNING_THRESHOLD  = 0.5;  // ±0.5 Hz/s
-    public static final double ROCOF_CRITICAL_THRESHOLD = 1.0;  // ±1.0 Hz/s
+    public static final double ROCOF_WARNING_THRESHOLD  = 0.3;  // ±0.5 Hz/s
+    public static final double ROCOF_CRITICAL_THRESHOLD = 0.6;  // ±1.0 Hz/s
 
     // System Health thresholds (App 3)
     public static final double VOLTAGE_WARNING_DEV  = 1000.0; // ±5%
