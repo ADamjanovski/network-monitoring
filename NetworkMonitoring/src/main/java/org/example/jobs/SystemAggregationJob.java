@@ -1,7 +1,12 @@
 package org.example.jobs;
+
+import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.example.models.SystemMetrics;
+import org.example.utils.MeasurementDeserializer;
+import org.example.models.Measurement;
+import org.example.models.configuration.AppConfig;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
-import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -10,17 +15,13 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.example.utils.MeasurementDeserializer;
-import org.example.models.Measurement;
-import org.example.models.FrequencyAlert;
-import org.example.windowsFunctions.FrequencyStabilityWindowFunction;
-import org.example.models.configuration.AppConfig;
+import org.example.windowsFunctions.SystemAggregationWindowFunction;
 
 import java.time.Duration;
 
-public class FrequencyStabilityJob {
+public class SystemAggregationJob {
 
-    private static final String JOB_NAME                = "Frequency-Stability-Analysis";
+    private static final String JOB_NAME                = "System-Wide-Aggregation";
 
     public static void main(String[] args) throws Exception {
 
@@ -28,6 +29,7 @@ public class FrequencyStabilityJob {
                 StreamExecutionEnvironment.getExecutionEnvironment();
 //        env.enableCheckpointing(1000);
         System.out.println("Starting Flink Job: " + JOB_NAME);
+
         KafkaSource<String> source = KafkaSource.<String>builder()
                 .setBootstrapServers(AppConfig.KAFKA_BOOTSTRAP_SERVERS)
                 .setTopics(AppConfig.INPUT_TOPIC)
@@ -39,7 +41,7 @@ public class FrequencyStabilityJob {
                 .setBootstrapServers(AppConfig.KAFKA_BOOTSTRAP_SERVERS)
                 .setRecordSerializer(
                         KafkaRecordSerializationSchema.builder()
-                                .setTopic(AppConfig.FREQUENCY_ALERTS_TOPIC)
+                                .setTopic(AppConfig.SYSTEM_METRICS_TOPIC)
                                 .setValueSerializationSchema(new SimpleStringSchema())
                                 .build()
                 )
@@ -49,7 +51,7 @@ public class FrequencyStabilityJob {
         DataStream<String> rawStream = env.fromSource(
                 source,
                 WatermarkStrategy.noWatermarks(),
-                "PMU-Frequency-Source"
+                "PMU-Aggregation-Source"
         );
 
         DataStream<Measurement> measurementStream = rawStream
@@ -62,22 +64,18 @@ public class FrequencyStabilityJob {
                 );
 
         
-        DataStream<FrequencyAlert> alerts = measurementStream
-                .keyBy(Measurement::getRegion)
+        DataStream<SystemMetrics> systemMetrics = measurementStream
+                .keyBy(m -> "SYSTEM")
                 .window(SlidingEventTimeWindows.of(
-                        Time.seconds(3),
-                        Time.seconds(1)
+                        Time.milliseconds(1500),
+                        Time.milliseconds(500)
                 ))
-                .process(new FrequencyStabilityWindowFunction());
+                .process(new SystemAggregationWindowFunction());
 
-        alerts.print();
-        alerts.map(FrequencyAlert::toJson)
-              .sinkTo(sink);
-        
-        try {
-            env.execute(JOB_NAME);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        systemMetrics.print();
+        systemMetrics.map(SystemMetrics::toJson)
+                     .sinkTo(sink);
+
+        env.execute(JOB_NAME);
     }
 }

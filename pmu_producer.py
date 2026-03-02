@@ -26,8 +26,8 @@ class PMUDataProducer:
         for region in regions:
             for substation_name in substations_dict[region]:
 
-                pmus_in_substation = random.randint(4, 6)
-                
+                # pmus_in_substation = random.randint(4, 6)
+                pmus_in_substation = 4
                 for pmu_idx in range(pmus_in_substation):
                     
                     pmu_id = f"{region}_{substation_name}_PMU{(pmu_idx+1):03d}"
