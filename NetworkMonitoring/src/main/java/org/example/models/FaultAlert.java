@@ -197,14 +197,12 @@ public class FaultAlert implements Serializable {
             json.put("region", region);
             json.put("substation", substation);
             json.put("location", location);
-            json.put("alert_type", alertType.name());
-            json.put("alert_type_display", alertType.getDisplayName());
+            json.put("alert_type", alertType.getDisplayName());
             json.put("description", description);
             json.put("measured_value", measuredValue);
             json.put("threshold", threshold);
             json.put("severity", severity);
-            json.put("severity_level", severityLevel.name());
-            json.put("severity_level_display", severityLevel.getDisplayName());
+            json.put("severity_level", severityLevel.getDisplayName());
             json.put("voltage", voltage);
             json.put("current", current);
             json.put("frequency", frequency); 

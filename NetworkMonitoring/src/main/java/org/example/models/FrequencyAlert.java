@@ -60,7 +60,7 @@ public class FrequencyAlert implements Serializable {
             node.put("rocof", rocof);
             node.put("rocof_volatility", rocofVolatility);
             node.put("measurement_count", measurementCount);
-            node.put("alert_type", alertType != null ? alertType.name() : null);
+            node.put("alert_description", alertType != null ? alertType.getDescription() : null);
             node.put("alert_display_name", alertType != null ? alertType.getDisplayName() : null);
             node.put("message", message);
             node.put("severity_score", severityScore);
