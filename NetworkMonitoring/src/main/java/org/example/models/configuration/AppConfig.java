@@ -5,7 +5,8 @@ public final class AppConfig {
     private AppConfig() {}
 
     // Kafka
-    public static final String KAFKA_BOOTSTRAP_SERVERS = "localhost:9092";
+    public static final String KAFKA_BOOTSTRAP_SERVERS =
+            System.getenv().getOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092");
     public static final String INPUT_TOPIC             = "pmu-measurements";
     public static final String FAULT_ALERTS_TOPIC      = "fault-alerts";
     public static final String FREQUENCY_ALERTS_TOPIC  = "frequency-alerts";

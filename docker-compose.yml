@@ -29,6 +29,55 @@ services:
       KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9093 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  flink-jobmanager:
+    image: network-monitoring-flink
+    build:
+      context: ./NetworkMonitoring
+    command: jobmanager
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        rest.bind-address: 0.0.0.0
+        parallelism.default: 1
+    ports:
+      - "8081:8081"
+
+  flink-taskmanager:
+    image: network-monitoring-flink
+    command: taskmanager
+    depends_on:
+      - flink-jobmanager
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 3
+        parallelism.default: 1
+
+  flink-jobs:
+    image: network-monitoring-flink
+    command: /opt/flink/bin/submit-jobs.sh
+    depends_on:
+      kafka:
+        condition: service_healthy
+      flink-jobmanager:
+        condition: service_started
+      flink-taskmanager:
+        condition: service_started
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+
   db:
     image: postgres:17.4
     environment:
@@ -38,6 +87,36 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-     - "2345:5432"
+      - "2345:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d network_monitoring"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/network_monitoring
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
 volumes:
-    pgdata:
+  pgdata:
