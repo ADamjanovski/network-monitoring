@@ -2,7 +2,6 @@ package com.example.backend.dto;
 
 import com.example.backend.model.FaultAlert;
 import com.example.backend.model.enums.AlertType;
-import com.example.backend.model.enums.FrequencyAlertType;
 import com.example.backend.model.enums.SeverityLevel;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -16,16 +15,16 @@ public record FaultAlertDto(String alertId, long timestamp, String pmuId, String
         public static FaultAlertDto from(FaultAlert faultAlert){
             return new FaultAlertDto(faultAlert.getAlertId(),faultAlert.getTimestamp(), faultAlert.getPmuId(),
                     faultAlert.getRegion(), faultAlert.getSubstation(), faultAlert.getLocation(),
-                    faultAlert.getAlertType(),
+                    faultAlert.getAlertType().getDisplayName(),
                     faultAlert.getDescription(), faultAlert.getMeasuredValue(), faultAlert.getThreshold(),
-                    faultAlert.getSeverity(), faultAlert.getSeverityLevel(), faultAlert.getVoltage(),
+                    faultAlert.getSeverity(), faultAlert.getSeverityLevel().getDisplayName(), faultAlert.getVoltage(),
                     faultAlert.getCurrent(), faultAlert.getFrequency());
         }
 
-        public  FaultAlert toFaultAlert(){
-            return new FaultAlert(alertId,timestamp,pmuId,region,substation,location,alertType,description,
-                    measuredValue,threshold,severity,severityLevel,voltage,current,frequency);
+        public FaultAlert toEntity(){
+            return new FaultAlert(alertId, timestamp, pmuId, region, substation, location,
+                    AlertType.fromDisplayName(alertType), description, measuredValue, threshold, severity,
+                    SeverityLevel.fromDisplayName(severityLevel), voltage, current, frequency);
         }
 
 }
-

@@ -3,6 +3,8 @@ package com.example.backend.model;
 import com.example.backend.model.enums.AlertType;
 import com.example.backend.model.enums.SeverityLevel;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import lombok.*;
 
@@ -22,12 +24,14 @@ public class FaultAlert {
     private String location;
 
     // Alert details (using Enums)
-    private String alertType;
+    @Enumerated(EnumType.STRING)
+    private AlertType alertType;
     private String description;
     private double measuredValue;
     private double threshold;
     private double severity;              // 0.0 to 1.0
-    private String severityLevel;
+    @Enumerated(EnumType.STRING)
+    private SeverityLevel severityLevel;
 
     private double voltage;
     private double current;

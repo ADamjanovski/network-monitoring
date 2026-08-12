@@ -20,4 +20,13 @@ public enum AlertType {
     public String getDescription() {
         return description;
     }
+
+    public static AlertType fromDisplayName(String displayName) {
+        for (AlertType alertType : values()) {
+            if (alertType.displayName.equals(displayName)) {
+                return alertType;
+            }
+        }
+        throw new IllegalArgumentException("Unknown alert type: " + displayName);
+    }
 }

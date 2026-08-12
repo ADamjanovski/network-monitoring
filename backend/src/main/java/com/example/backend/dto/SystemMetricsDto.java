@@ -17,7 +17,7 @@ public record SystemMetricsDto(long timestamp, long windowStart, long windowEnd,
                 systemMetrics.getMaxCurrent());
     }
 
-    public SystemMetrics toSystemMetric(){
+    public SystemMetrics toEntity(){
         return new SystemMetrics(timestamp, windowStart, windowEnd, activePmuCount, avgFrequency, minFrequency,
                 maxFrequency, avgVoltage, minVoltage, maxVoltage, avgCurrent, minCurrent, maxCurrent);
     }

@@ -6,55 +6,75 @@ import com.example.backend.dto.SystemMetricsDto;
 import com.example.backend.service.application.FaultAlertApplicationService;
 import com.example.backend.service.application.FrequencyAlertApplicationService;
 import com.example.backend.service.application.SystemMetricsApplicationService;
+import com.example.backend.service.stream.SseEventService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class KafkaListeners {
 
+    private static final Logger log = LoggerFactory.getLogger(KafkaListeners.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     private final FaultAlertApplicationService faultAlertApplicationService;
     private final FrequencyAlertApplicationService frequencyAlertApplicationService;
     private final SystemMetricsApplicationService systemMetricsApplicationService;
-    private static final ObjectMapper objectMapper=new ObjectMapper();
+    private final SseEventService sseEventService;
 
 
     public KafkaListeners(FaultAlertApplicationService faultAlertApplicationService,
                           FrequencyAlertApplicationService frequencyAlertApplicationService,
-                          SystemMetricsApplicationService systemMetricsApplicationService) {
+                          SystemMetricsApplicationService systemMetricsApplicationService,
+                          SseEventService sseEventService) {
         this.faultAlertApplicationService = faultAlertApplicationService;
         this.frequencyAlertApplicationService = frequencyAlertApplicationService;
         this.systemMetricsApplicationService = systemMetricsApplicationService;
+        this.sseEventService = sseEventService;
     }
 
-    @KafkaListener(topics = "system-metrics")
-    public void onMetric(String json) throws JsonProcessingException {
+    @KafkaListener(topics = "${app.kafka.topics.system-metrics}")
+    public void onMetric(String json) {
+        SystemMetricsDto metrics;
         try {
-            systemMetricsApplicationService.save(objectMapper.readValue(json, SystemMetricsDto.class));
-        } catch (Exception e) {
-            System.err.println("Failed to deserialize: " + json);
-            throw e;
+            metrics = objectMapper.readValue(json, SystemMetricsDto.class);
+        } catch (JsonProcessingException exception) {
+            log.error("Could not deserialize system metrics: {}", json, exception);
+            return;
         }
+
+        systemMetricsApplicationService.save(metrics);
+        sseEventService.publish("system-metric", Long.toString(metrics.timestamp()), metrics);
     }
 
-    @KafkaListener(topics = "fault-alerts")
-    public void onFaultAlert(String json) throws JsonProcessingException {
+    @KafkaListener(topics = "${app.kafka.topics.fault-alerts}")
+    public void onFaultAlert(String json) {
+        FaultAlertDto alert;
         try {
-            faultAlertApplicationService.save(objectMapper.readValue(json, FaultAlertDto.class));
-        } catch (Exception e) {
-            System.err.println("Failed to deserialize: " + json);
-            throw e;
+            alert = objectMapper.readValue(json, FaultAlertDto.class);
+        } catch (JsonProcessingException exception) {
+            log.error("Could not deserialize fault alert: {}", json, exception);
+            return;
         }
+
+        faultAlertApplicationService.save(alert);
+        sseEventService.publish("fault-alert", alert.alertId(), alert);
     }
 
-    @KafkaListener(topics = "frequency-alerts")
-    public void onFrequencyAlert(String json) throws JsonProcessingException {
+    @KafkaListener(topics = "${app.kafka.topics.frequency-alerts}")
+    public void onFrequencyAlert(String json) {
+        FrequencyAlertDto alert;
         try {
-            frequencyAlertApplicationService.save(objectMapper.readValue(json, FrequencyAlertDto.class));
-        } catch (Exception e) {
-            System.err.println("Failed to deserialize: " + json);
-            throw e;
+            alert = objectMapper.readValue(json, FrequencyAlertDto.class);
+        } catch (JsonProcessingException exception) {
+            log.error("Could not deserialize frequency alert: {}", json, exception);
+            return;
         }
+
+        frequencyAlertApplicationService.save(alert);
+        sseEventService.publish("frequency-alert", alert.alertId(), alert);
     }
 }

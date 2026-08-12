@@ -35,4 +35,13 @@ public enum SeverityLevel {
         if (severity >= MEDIUM.minSeverity) return MEDIUM;
         return LOW;
     }
+
+    public static SeverityLevel fromDisplayName(String displayName) {
+        for (SeverityLevel severityLevel : values()) {
+            if (severityLevel.displayName.equals(displayName)) {
+                return severityLevel;
+            }
+        }
+        throw new IllegalArgumentException("Unknown severity level: " + displayName);
+    }
 }

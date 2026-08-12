@@ -20,4 +20,13 @@ public enum FrequencyAlertType {
 
     public String getDisplayName() { return displayName; }
     public String getDescription() { return description; }
+
+    public static FrequencyAlertType fromDisplayName(String displayName) {
+        for (FrequencyAlertType alertType : values()) {
+            if (alertType.displayName.equals(displayName)) {
+                return alertType;
+            }
+        }
+        throw new IllegalArgumentException("Unknown frequency alert type: " + displayName);
+    }
 }

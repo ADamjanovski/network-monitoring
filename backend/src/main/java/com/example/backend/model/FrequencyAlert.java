@@ -3,6 +3,8 @@ package com.example.backend.model;
 import com.example.backend.model.enums.FrequencyAlertType;
 import com.example.backend.model.enums.SeverityLevel;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import lombok.*;
 
@@ -28,10 +30,12 @@ public class FrequencyAlert {
     private double rocof;
     private double rocofVolatility;
 
-    private String alertType;
+    @Enumerated(EnumType.STRING)
+    private FrequencyAlertType alertType;
     private String alertDescription;
     private String message;
-    private String severity;
+    @Enumerated(EnumType.STRING)
+    private SeverityLevel severityLevel;
     private double severityScore;
 
     private int measurementCount;
