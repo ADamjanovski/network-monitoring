@@ -3,9 +3,12 @@ package org.example.models;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.example.models.enums.FrequencyAlertType;
+import org.example.models.enums.FrequencyIncidentState;
 import org.example.models.enums.SeverityLevel;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FrequencyAlert implements Serializable {
 
@@ -16,6 +19,8 @@ public class FrequencyAlert implements Serializable {
     private long windowEnd;
     private long timestamp;
     private String region;
+    private FrequencyIncidentState incidentState;
+    private List<String> affectedRegions = new ArrayList<>();
 
     private double avgFrequency;
     private double minFrequency;
@@ -53,6 +58,9 @@ public class FrequencyAlert implements Serializable {
             node.put("window_start", windowStart);
             node.put("window_end", windowEnd);
             node.put("region", region);
+            node.put("incident_state", incidentState != null ? incidentState.name() : null);
+            com.fasterxml.jackson.databind.node.ArrayNode regionsNode = node.putArray("affected_regions");
+            for (String affectedRegion : affectedRegions) regionsNode.add(affectedRegion);
             node.put("avg_frequency", avgFrequency);
             node.put("min_frequency", minFrequency);
             node.put("max_frequency", maxFrequency);
@@ -86,6 +94,14 @@ public class FrequencyAlert implements Serializable {
 
     public String getRegion() { return region; }
     public void setRegion(String region) { this.region = region; }
+
+    public FrequencyIncidentState getIncidentState() { return incidentState; }
+    public void setIncidentState(FrequencyIncidentState incidentState) { this.incidentState = incidentState; }
+
+    public List<String> getAffectedRegions() { return affectedRegions; }
+    public void setAffectedRegions(List<String> affectedRegions) {
+        this.affectedRegions = affectedRegions != null ? new ArrayList<>(affectedRegions) : new ArrayList<>();
+    }
 
     public double getAvgFrequency() { return avgFrequency; }
     public void setAvgFrequency(double avgFrequency) { this.avgFrequency = avgFrequency; }

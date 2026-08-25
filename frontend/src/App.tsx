@@ -244,9 +244,12 @@ export default function App() {
     stream.addEventListener("frequency-alert", (event) => {
       try {
         const alert = parseFrequencyAlert(JSON.parse(event.data) as RawFrequencyAlert);
-        if (alert.severityLevel === "Critical") {
-          setNotifications((previous) => [alert, ...previous.filter((item) => item.alertId !== alert.alertId)].slice(0, 12));
-        }
+        setNotifications((previous) => {
+          const withoutIncident = previous.filter((item) => item.alertId !== alert.alertId);
+          const isActiveCritical = alert.severityLevel === "Critical" &&
+            (alert.incidentState === "START" || alert.incidentState === "UPDATE");
+          return isActiveCritical ? [alert, ...withoutIncident].slice(0, 12) : withoutIncident;
+        });
         if (matchesFrequencyFilters(alert, appliedFrequencyFilters.current)) {
           setFrequencyAlerts((previous) => [alert, ...previous.filter((item) => item.alertId !== alert.alertId)].slice(0, 200));
         }

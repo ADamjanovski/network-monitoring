@@ -55,6 +55,8 @@ export function frequencyAlert(raw: RawFrequencyAlert): FrequencyAlert {
     windowStart: raw.windowStart,
     windowEnd: raw.windowEnd,
     region: raw.region,
+    incidentState: raw.incidentState,
+    affectedRegions: raw.affectedRegions,
     avgFrequency: raw.avgFrequency,
     minFrequency: raw.minFrequency,
     maxFrequency: raw.maxFrequency,

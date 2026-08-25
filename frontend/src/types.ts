@@ -1,4 +1,5 @@
 export type Severity = "Low" | "Medium" | "High" | "Critical";
+export type FrequencyIncidentState = "START" | "UPDATE" | "RECOVERY" | "CLOSE";
 
 export interface SystemMetric {
   timestamp: number;
@@ -42,6 +43,8 @@ export interface FrequencyAlert {
   windowStart: number;
   windowEnd: number;
   region: string;
+  incidentState: FrequencyIncidentState | null;
+  affectedRegions: string[];
   avgFrequency: number;
   minFrequency: number;
   maxFrequency: number;
@@ -109,6 +112,8 @@ export interface RawFrequencyAlert {
   windowStart: number;
   windowEnd: number;
   region: string;
+  incidentState: FrequencyIncidentState | null;
+  affectedRegions: string[];
   avgFrequency: number;
   minFrequency: number;
   maxFrequency: number;

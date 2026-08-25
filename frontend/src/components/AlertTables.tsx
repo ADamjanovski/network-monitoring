@@ -75,6 +75,7 @@ export function FrequencyAlertTable({ alerts, loading, onSelect }: FrequencyAler
           <tr>
             <th>Detected</th>
             <th>Severity</th>
+            <th>State</th>
             <th>Alert type</th>
             <th>Region</th>
             <th className="numeric">Frequency</th>
@@ -89,6 +90,7 @@ export function FrequencyAlertTable({ alerts, loading, onSelect }: FrequencyAler
             <tr key={alert.alertId}>
               <td><time dateTime={new Date(alert.timestamp).toISOString()}>{formatDateTime(alert.timestamp)}</time></td>
               <td><span className={`severity-pill severity-pill--${alert.severityLevel.toLowerCase()}`}>{alert.severityLevel}</span></td>
+              <td><strong className="table-primary">{alert.incidentState ?? "LEGACY"}</strong></td>
               <td><strong className="table-primary">{alert.alertDisplayName}</strong></td>
               <td>{alert.region}</td>
               <td className="numeric"><span className="stacked-value"><strong>{formatNumber(alert.avgFrequency, 3)} Hz</strong><small>{formatNumber(alert.minFrequency, 3)}–{formatNumber(alert.maxFrequency, 3)}</small></span></td>

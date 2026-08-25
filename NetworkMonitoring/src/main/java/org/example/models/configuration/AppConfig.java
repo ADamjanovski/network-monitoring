@@ -26,6 +26,11 @@ public final class AppConfig {
     public static final double FREQ_WARNING_THRESHOLD   = 0.2;
     public static final double ROCOF_WARNING_THRESHOLD  = 0.33;
     public static final double ROCOF_CRITICAL_THRESHOLD = 0.67;
+    public static final double REGIONAL_FREQUENCY_DISAGREEMENT_MIN_HZ = 0.05;
+    public static final double REGIONAL_FREQUENCY_MAD_MULTIPLIER = 3.0;
+    public static final long FREQUENCY_INCIDENT_UPDATE_INTERVAL_MS = 10_000L;
+    public static final long FREQUENCY_INCIDENT_RECOVERY_HOLD_MS = 5_000L;
+    public static final long FREQUENCY_INCIDENT_COOLDOWN_MS = 10_000L;
 
     // System Health thresholds (App 3)
     public static final double VOLTAGE_WARNING_DEV  = 1000.0; // ±5%

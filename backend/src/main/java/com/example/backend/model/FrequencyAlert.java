@@ -1,7 +1,9 @@
 package com.example.backend.model;
 
 import com.example.backend.model.enums.FrequencyAlertType;
+import com.example.backend.model.enums.FrequencyIncidentState;
 import com.example.backend.model.enums.SeverityLevel;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -22,6 +24,10 @@ public class FrequencyAlert {
     private long windowEnd;
     private long timestamp;
     private String region;
+    @Enumerated(EnumType.STRING)
+    private FrequencyIncidentState incidentState;
+    @Column(length = 512)
+    private String affectedRegions;
 
     private double avgFrequency;
     private double minFrequency;

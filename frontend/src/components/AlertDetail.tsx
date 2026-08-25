@@ -32,6 +32,8 @@ export function AlertDetail({ alert, onClose }: AlertDetailProps) {
         ["Frequency", `${formatNumber(alert.frequency, 3)} Hz`],
       ]
     : [
+        ["Incident state", alert.incidentState ?? "Legacy alert"],
+        ["Affected regions", alert.affectedRegions.length ? alert.affectedRegions.join(", ") : "None"],
         ["Average frequency", `${formatNumber(alert.avgFrequency, 3)} Hz`],
         ["Frequency range", `${formatNumber(alert.minFrequency, 3)}–${formatNumber(alert.maxFrequency, 3)} Hz`],
         ["Deviation", `${formatNumber(alert.frequencyDeviation, 3)} Hz`],

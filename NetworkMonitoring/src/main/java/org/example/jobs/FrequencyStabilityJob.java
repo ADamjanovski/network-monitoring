@@ -63,7 +63,7 @@ public class FrequencyStabilityJob {
 
         
         DataStream<FrequencyAlert> alerts = measurementStream
-                .keyBy(Measurement::getRegion)
+                .keyBy(measurement -> "SYSTEM")
                 .window(SlidingEventTimeWindows.of(
                         Time.seconds(3),
                         Time.seconds(1)

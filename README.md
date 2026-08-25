@@ -64,6 +64,8 @@ GET /api/frequency-alert/{alertId}
 
 Optional filters: `start`, `end`, `region`, `alertType`, `severityLevel`, and `limit`.
 
+Frequency disturbances are stored as system-wide incidents rather than one alert per region and sliding window. Each incident keeps one stable ID while moving through `START`, deduplicated `UPDATE`, `RECOVERY`, and `CLOSE` states; affected regions are included only when their robust frequency estimates show statistically significant disagreement from the system median.
+
 ```sh
 curl "http://localhost:8080/api/frequency-alert?region=Skopje&severityLevel=HIGH&limit=50"
 ```
