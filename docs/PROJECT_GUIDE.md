@@ -44,6 +44,8 @@ flowchart LR
     E -->|Live SSE events| G
 ```
 
+*Figure 1. Complete application data flow from simulation to dashboard.*
+
 ### Why these tools were chosen
 
 Each tool has one clear job:
@@ -74,6 +76,18 @@ The value 20 kV is a **nominal voltage**, which means it is the name and referen
 
 The organization operating this part of the network is normally called a distribution system operator, or DSO. Its staff need to know whether feeders are healthy, whether voltage stays within limits, whether equipment is overloaded, and whether a disturbance is local or part of a wider event. This project is best understood as a small learning example of such a monitoring view.
 
+```mermaid
+flowchart LR
+    A[Power plant] --> B[High-voltage<br/>transmission]
+    B --> C[Distribution<br/>substation]
+    C --> D[20 kV feeder]
+    D --> E[Distribution<br/>transformer]
+    E --> F[Homes and<br/>businesses]
+    D -.-> M[Simplified monitoring<br/>units in this project]
+```
+
+*Figure 2. The place of a 20 kV feeder between transmission and customers.*
+
 ### 3.2 Alternating current and three phases
 
 The electricity in this network is **alternating current**, usually shortened to AC. Its voltage and current move in repeating waves and change direction many times each second. At 50 Hz, one full wave repeats 50 times per second. This repeating behavior is the reason frequency is an important network value.
@@ -93,6 +107,19 @@ Think of a water pipe. Normal water follows the pipe. A crack creates a new path
 A fault changes the electrical path and often lets a large current flow. That current causes a voltage drop across the network, so monitoring devices may see high current and low voltage at the same time. Devices closer to the fault often see a stronger change, while devices farther away may see only a smaller voltage sag. The exact pattern depends on the fault type, network connections, transformers, and where each device is installed.
 
 Protection relays watch electrical values and can order a circuit breaker to disconnect the affected part very quickly. This action is called **fault clearing**. Its goal is to stop dangerous current before it damages cables, transformers, or other equipment. Fast clearing also lowers fire risk and reduces danger to people, although it causes an outage in the disconnected area.
+
+```mermaid
+flowchart TD
+    A[Physical damage or contact] --> B[Unwanted electrical path]
+    B --> C[Current may rise]
+    B --> D[Voltage may fall]
+    C --> E[Protection relay checks the event]
+    D --> E
+    E --> F[Circuit breaker opens the affected line]
+    F --> G[Fault energy stops<br/>Affected area loses supply]
+```
+
+*Figure 3. A simplified cause-and-effect chain for a real network fault.*
 
 Common fault groups are:
 
@@ -308,6 +335,8 @@ flowchart TD
     C --> C1[Average, minimum, maximum<br/>and active unit count]
 ```
 
+*Figure 4. The three Flink analysis paths.*
+
 ### 7.1 Job 1: disturbance detection
 
 [`SimpleFaultDetectionJob`](../NetworkMonitoring/src/main/java/org/example/jobs/SimpleFaultDetectionJob.java) sends each measurement to [`FaultDetectionFunction`](../NetworkMonitoring/src/main/java/org/example/windowsFunctions/FaultDetectionFunction.java).
@@ -378,6 +407,8 @@ stateDiagram-v2
     RECOVERY --> CLOSE: Normal for 5 seconds
     CLOSE --> [*]: 10-second cooldown ends
 ```
+
+*Figure 5. The lifecycle of one system frequency incident.*
 
 The `START` state means that a new problem appeared. `UPDATE` means that the same problem continues or becomes worse. `RECOVERY` means that values returned to normal, but the system is waiting before it closes the incident. `CLOSE` means that the values stayed normal long enough.
 
@@ -469,6 +500,8 @@ sequenceDiagram
     D->>P: Start measurement producer
     P->>K: Send live measurements
 ```
+
+*Figure 6. Safe startup sequence used by the local application.*
 
 The producer starts only after the job submission container confirms that all three Flink jobs are running.
 
