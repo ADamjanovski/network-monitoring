@@ -252,21 +252,21 @@ This project belongs to monitoring. It also demonstrates simple power-quality wa
 
 A real operator would use an alert as the start of an investigation. The operator may compare nearby measurements, check data quality, view breaker and relay records, inspect network topology, and contact field staff. Only after combining this evidence can the event be classified and handled safely. The dashboard currently supports awareness, but it does not implement this full operator workflow.
 
-## 4. What a PMU normally is
+## 4. The PMUs used in this project
 
-PMU means **Phasor Measurement Unit**. A real PMU normally reports the magnitude and phase angle of voltage and current, together with frequency and RoCoF. It uses an accurate shared time stamp, includes information about data and time quality, and sends measurements many times per second.
+In this project, a PMU is a simulated observation point in the 20 kV distribution network. It represents a device installed near substation or feeder equipment, where it can repeatedly report the local electrical condition. No physical sensor is connected; the Python producer creates every PMU and its measurements in software.
 
-A **magnitude** tells us the size of a wave, while a **phase angle** tells us its position within one cycle. Imagine two people running around a circular track at the same speed. Their speed may be equal, but one runner can still be several steps ahead. The phase angle describes this kind of position difference between electrical waves.
+The simulated network has 64 PMUs spread across eight regions. Each region contains two substations, and each substation contains four PMUs. Using several units at one substation gives the project multiple observation points instead of one value for an entire region. This makes it possible to show local alerts while also building one wider view of the system.
 
-Phase-angle differences help engineers understand how power is moving and whether two parts of the network are drifting apart. Separate values for all three phases also show whether the network is balanced. Voltage and current magnitudes alone cannot provide this full picture.
+Every PMU has a stable identity and location. For example, `Skopje_Skopje_PMU001` identifies the first unit in the Skopje substation and region. Its measurement also carries the readable location, substation, region, and the `MV` voltage-level label. These fields allow an alert to keep its electrical value together with the place where it was observed.
 
-The shared time stamp is just as important as the electrical values. If devices in different places use the same clock, their measurements can be compared as one group photo of the network. If their clocks disagree, a normal change can appear to move from one location to another and can create a false RoCoF or phase-angle result.
+Each report contains voltage magnitude in volts, current magnitude in amperes, frequency in hertz, and a UTC time stamp in milliseconds. All units use 20,000 V, 400 A, and 50 Hz as their demo reference values. Voltage and current describe the local simulated unit, while frequency begins from one shared system value with a small amount of measurement variation.
 
-Real PMU data also contains quality information. A device may report that its clock is unreliable, a value is missing, or a calculation should not be trusted. Processing software should keep that warning with the measurement instead of treating every number as correct.
+The 64 PMUs report in batches. Every measurement in one batch receives exactly the same time stamp because all units are describing the same simulated moment. This creates one **reporting frame**, similar to taking a group photo of the whole network. Flink can then find the middle frequency of that frame and compare it with earlier frames without treating different locations as different moments in time.
 
-This project uses a simplified PMU-like model. It reports only voltage magnitude, current magnitude, frequency, location information, and one shared batch time stamp.
+The same PMU report is useful in three ways. The disturbance job checks that unit's voltage and current against the demo limits. The frequency job combines synchronized reports from all units into one system assessment. The aggregation job calculates network-wide minimum, maximum, and average values for the dashboard.
 
-It does not contain phase angles, three-phase values, data-quality flags, or the extra calculated values that engineers use to study unbalanced problems. It also reports roughly once every 0.5 to 1.2 seconds, while real PMUs commonly report many frames per second. Calling the devices **simulated monitoring units** or **simplified distribution PMUs** is therefore more accurate.
+The project calls these units **simplified distribution PMUs** because they provide time-aligned electrical measurements from several medium-voltage locations. Their data contract was intentionally kept small so the complete MVP pipeline is easy to follow: every report answers who measured, where it was measured, when it was measured, and what voltage, current, and frequency were observed.
 
 ## 5. The simulator
 
