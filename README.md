@@ -2,7 +2,7 @@
 
 Personal Apache Flink project for processing simulated PMU measurements, storing alerts and system metrics, querying them through Spring Boot, and streaming new results with Server-Sent Events (SSE).
 
-For a simple explanation of the electrical domain, architecture, alert logic, and current limits, read the [project guide](docs/PROJECT_GUIDE.md).
+For a simple explanation of the electrical domain, architecture, alert logic, and current limits, read the [project documentation](documentation.md).
 
 ## Run It on Another Machine
 

@@ -4,21 +4,15 @@
 
 ## Abstract
 
-This document explains the electrical ideas and software design behind the network-monitoring project. It is written for readers who have no previous electrical or software background. The goal is to explain what the system observes, why network problems happen, what their effects can be, how the application processes data, and where its current limits are.
-
-The project is a complete educational pipeline, but it is not a real protection system. Its best use is to demonstrate how simulated measurements can move through a live data platform and become dashboard alerts.
+This document explains the electrical ideas and software design behind the network-monitoring project. The goal is to explain what the system observes, why network problems happen, what their effects can be, how the application processes data, and where its current limits are. The project is a complete educational pipeline, but it is not a real protection system. Its best use is to demonstrate how simulated measurements can move through a live data platform and become dashboard alerts.
 
 ## 1. Introduction
 
-This project is a small, complete example of a live electricity network monitoring system.
-
-It creates fake measurements for a simulated **20 kV distribution network**, sends them through a data pipeline, finds unusual values, saves alerts, and shows everything on a web dashboard.
+This project is a small, complete example of a live electricity network monitoring system. It creates fake measurements for a simulated **20 kV distribution network**, sends them through a data pipeline, finds unusual values, saves alerts, and shows everything on a web dashboard.
 
 The simplest honest description is:
 
 > Real-time monitoring and threshold-based disturbance alerting for a simulated 20 kV distribution network.
-
-The system is useful for learning and demonstrations. It is **not** a protection relay and must not control real electrical equipment.
 
 ## 2. System overview
 
@@ -64,15 +58,11 @@ This separation also makes the system easier to understand. For example, changin
 
 ## 3. Electrical domain background
 
-You do not need electrical engineering knowledge to understand the project. These are the main ideas.
-
 ### 3.1 Distribution network
 
 Electricity travels through several network levels. Power plants first generate it. High-voltage transmission lines then move it across long distances. Distribution networks bring it closer to towns, businesses, and homes, and transformers reduce the voltage before it reaches customers.
 
-This project uses **20 kV**, or 20,000 volts. That is a medium-voltage distribution level. It is suitable for feeders and substations, not for a sensor inside a house. A distribution substation receives electricity, changes or controls its voltage, and sends it through outgoing lines called **feeders**. A feeder is like a main road that branches into smaller roads as it supplies different areas.
-
-The value 20 kV is a **nominal voltage**, which means it is the name and reference value for that network level. The real measured value moves a little as customers connect and disconnect, power flows change, and control equipment adjusts the network. A transformer near the customer later reduces this medium voltage to a much lower level that homes and small businesses can use.
+This project uses **20 kV**, or 20,000 volts. That is a medium-voltage distribution level. It is suitable for feeders and substations, not for a sensor inside a house. A distribution substation receives electricity, changes or controls its voltage, and sends it through outgoing lines called **feeders**. A feeder is like a main road that branches into smaller roads as it supplies different areas. The value 20 kV is a **nominal voltage**, which means it is the name and reference value for that network level. The real measured value moves a little as customers connect and disconnect, power flows change, and control equipment adjusts the network. A transformer near the customer later reduces this medium voltage to a much lower level that homes and small businesses can use.
 
 The organization operating this part of the network is normally called a distribution system operator, or DSO. Its staff need to know whether feeders are healthy, whether voltage stays within limits, whether equipment is overloaded, and whether a disturbance is local or part of a wider event. This project is best understood as a small learning example of such a monitoring view.
 
@@ -172,7 +162,7 @@ Possible effects include stress on insulation, shorter equipment life, protectio
 
 As with a sag, duration matters. A short swell and a long overvoltage are not the same event and may require different action. Engineers also check which phases were affected, whether the measurement is trustworthy, and whether nearby devices saw the same change.
 
-The current implementation creates an alert from one sample outside the limit. It does not yet wait to see how long the condition lasts, join repeated samples into one voltage event, or add a clear recovery point. The threshold is useful for an MVP dashboard, but the alert should be read as early evidence rather than a complete power-quality classification.
+The current implementation creates an alert from one sample outside the limit. It does not yet wait to see how long the condition lasts. The threshold is useful for an MVP dashboard, but the alert should be read as early evidence rather than a complete power-quality classification.
 
 ### 3.5 Current and overcurrent
 
@@ -270,7 +260,7 @@ The project calls these units **simplified distribution PMUs** because they prov
 
 ## 5. The simulator
 
-The Python program in [`pmu_producer.py`](../pmu_producer.py) creates the input data.
+The Python program in [`pmu_producer.py`](pmu_producer.py) creates the input data.
 
 ### 5.1 Simulated network size
 
@@ -282,19 +272,17 @@ All 64 measurements in one batch receive the same time stamp. This matters becau
 
 It is like taking one group photo. Everyone in the photo belongs to the same moment. Giving each person a different time would make the photo hard to understand.
 
-A new batch is produced roughly every 0.5 to 1.2 seconds. That is enough for this dashboard, but much slower than a real PMU stream.
+A new batch is produced roughly every 0.5 to 1.2 seconds.
 
 ### 5.3 Normal noise and unusual values
 
 Normal values include small random changes. Real measurements are never perfectly still because loads change, control systems act, and sensors contain a small amount of noise. A perfectly flat line would therefore look artificial and would not test how the analysis handles ordinary variation.
 
-Voltage and current anomalies are generated separately. A voltage anomaly no longer forces a current anomaly, and a current anomaly no longer forces a voltage anomaly. This choice prevents every random event from showing the same made-up pattern. In a future electrical model, the values should become correlated again, but that correlation should come from network physics and fault type rather than from one random switch.
+Voltage and current anomalies are generated separately. A voltage anomaly no longer forces a current anomaly, and a current anomaly no longer forces a voltage anomaly. This choice prevents every random event from showing the same made-up pattern.
 
 Generated voltage and current anomalies use a severity value that can cover Low, Medium, High, and Critical results. Values just past a threshold receive a small score, while values farther from it receive a larger one. This was chosen so the simulator can exercise every dashboard severity instead of producing only one or two levels.
 
 The shared system frequency can move as a ramp over several seconds. A ramp means that frequency changes step by step instead of jumping once. This creates real time points from which RoCoF can be calculated and makes the same broad frequency movement visible across the simulated network.
-
-The simulator is still random and does not use a power-flow or fault model. Its values may be useful for software testing, but they cannot prove that an alert algorithm found a physically correct event. A future simulator should calculate how one event affects connected devices and should publish a separate ground-truth record saying what was created, where it happened, which phases were involved, and when it ended.
 
 ## 6. Kafka: the message mailbox
 
@@ -339,11 +327,11 @@ flowchart TD
 
 ### 7.1 Job 1: disturbance detection
 
-[`SimpleFaultDetectionJob`](../NetworkMonitoring/src/main/java/org/example/jobs/SimpleFaultDetectionJob.java) sends each measurement to [`FaultDetectionFunction`](../NetworkMonitoring/src/main/java/org/example/windowsFunctions/FaultDetectionFunction.java).
+[`SimpleFaultDetectionJob`](NetworkMonitoring/src/main/java/org/example/jobs/SimpleFaultDetectionJob.java) sends each measurement to [`FaultDetectionFunction`](NetworkMonitoring/src/main/java/org/example/windowsFunctions/FaultDetectionFunction.java).
 
 The function checks three rules. It looks for voltage below 18,000 V, voltage above 22,000 V, and current above 1,200 A.
 
-Each matching sample creates an alert with a new ID. This is simple and easy to demonstrate, but a long event can create several alerts. A future version should group those samples into one disturbance incident.
+Each matching sample creates an alert with a new ID. This is simple and easy to demonstrate, but a long event can create several alerts.
 
 ### 7.2 Severity score
 
@@ -368,7 +356,7 @@ This score is a dashboard priority, not a protection command.
 
 ### 7.3 Job 2: frequency analysis
 
-[`FrequencyStabilityJob`](../NetworkMonitoring/src/main/java/org/example/jobs/FrequencyStabilityJob.java) uses a three-second window that moves every second.
+[`FrequencyStabilityJob`](NetworkMonitoring/src/main/java/org/example/jobs/FrequencyStabilityJob.java) uses a three-second window that moves every second.
 
 A moving window is like watching the latest three seconds of a race, then moving the camera forward by one second and watching again. Windows overlap, which gives regular updates but can create duplicate alerts if they are not grouped.
 
@@ -424,7 +412,7 @@ This is a useful demo rule, not proof that a region separated from the grid.
 
 ### 7.4 Job 3: system metrics
 
-[`SystemAggregationJob`](../NetworkMonitoring/src/main/java/org/example/jobs/SystemAggregationJob.java) uses a 1.5-second window that moves every 0.5 seconds.
+[`SystemAggregationJob`](NetworkMonitoring/src/main/java/org/example/jobs/SystemAggregationJob.java) uses a 1.5-second window that moves every 0.5 seconds.
 
 It calculates the number of active monitoring units. It also finds the average, minimum, and maximum values for frequency, voltage, and current.
 
@@ -460,13 +448,7 @@ Alert endpoints support time, type, severity, and location filters. Results are 
 
 ### 9.2 SSE live updates
 
-SSE means **Server-Sent Events**. It keeps one web connection open so the backend can send new information to the browser.
-
-Normal REST is like calling a shop and asking, “Do you have an update?” SSE is like leaving the call open so the shop can tell you as soon as something changes.
-
-The backend sends three named event types: `fault-alert`, `frequency-alert`, and `system-metric`.
-
-A heartbeat is sent every 15 seconds to keep the connection alive.
+SSE means **Server-Sent Events**. It keeps one web connection open so the backend can send new information to the browser. The backend sends three named event types: `fault-alert`, `frequency-alert`, and `system-metric`. A heartbeat is sent every 15 seconds to keep the connection alive.
 
 ### 9.3 Frequency incident storage
 
@@ -505,63 +487,6 @@ sequenceDiagram
 
 The producer starts only after the job submission container confirms that all three Flink jobs are running.
 
-## 12. Scope and valid claims
-
-The project can honestly claim that it processes simulated 20 kV measurements in real time and creates threshold-based voltage and current disturbance alerts. It provides basic system frequency and RoCoF monitoring, groups repeated frequency warnings into incidents, stores results, supports REST queries, and sends live dashboard updates. It also demonstrates a complete pipeline made with Python, Kafka, Flink, Spring Boot, PostgreSQL, and React.
-
-The project should not claim that its measurements follow the full PMU standards or that it confirms real electrical faults. It does not classify fault types, locate faults, act as a protection relay, or make automatic trip decisions. In its current form, it is not ready for use on a real grid.
-
-## 13. Important current limits
-
-### Domain limits
-
-The simulated values come from random rules rather than an electrical network model. They do not include three-phase measurements or phase angles, and fault alerts do not check how long an event lasts. The system has no feeder topology or fault-location method. Every unit uses the same base voltage and current, and there is no labeled ground truth for measuring how often detection is right or wrong.
-
-### Technical limits
-
-Flink checkpointing is disabled, so job state is not safely restored after a restart. On a fresh start, the jobs begin with the latest Kafka data instead of reading older messages. Bad input can stop a Flink job because there is no separate topic for rejected messages.
-
-Database changes use automatic schema updates instead of controlled migrations. The system also has no login, user roles, TLS encryption, or secrets manager. Frequency incident state changes are sent live, but they are not stored as a full history.
-
-## 14. Recommended next steps
-
-The first improvement should be to group voltage and current samples into incidents with duration, recovery, duplicate control, and stable IDs. Flink checkpoints and stable Kafka consumer groups should come next, followed by a separate topic for invalid messages so one bad record does not stop a job.
-
-After the pipeline becomes more reliable, the simulator should use repeatable scenarios and publish ground-truth events to a separate Kafka topic. Domain quality can then improve by adding three-phase voltage and current phasors, data-quality flags, per-unit values, and separate limits for each monitoring point. The final MVP step should store every incident state change and let an operator acknowledge an alert.
-
-## 15. Conclusion
+## 12. Conclusion
 
 This project succeeds as a working example of live monitoring. It generates data, transports it, analyzes it, stores results, and updates a dashboard. The implementation also corrects important software problems such as missing Kafka topics, misaligned frequency samples, mathematically inconsistent severity values, and repeated frequency alerts.
-
-Its domain meaning must still be kept clear. A threshold crossing is evidence of a disturbance, not proof of a fault. Reliable real-grid use would require three-phase synchronized measurements, data-quality checks, event duration, network topology, physically correct scenarios, tested recovery after failures, and operator security controls. Until those parts exist, the dashboard should support learning and awareness only.
-
-## 16. Short glossary
-
-| Word | Simple meaning |
-|---|---|
-| Distribution network | The part of the grid that brings electricity closer to users |
-| Feeder | A line that carries electricity from a substation to an area |
-| Substation | A place where electricity is switched, measured, or transformed |
-| PMU | A device that measures synchronized electrical waves |
-| Phasor | The size and angle of an electrical wave |
-| Voltage | Electrical “pressure” |
-| Current | Flow of electric charge |
-| Frequency | Number of AC wave cycles each second |
-| RoCoF | How fast frequency is changing |
-| Kafka topic | A named stream of messages |
-| Flink window | A small time period analyzed as one group |
-| Incident | One problem that can have several updates |
-| REST API | A way for the browser to request stored data |
-| SSE | A live one-way update connection from server to browser |
-
-## 17. References
-
-The [North Macedonia Energy Regulatory Commission annual report](https://www.erc.org.mk/odluki/2023.04.26_RKE%20GI%202022-FINAL%20ENG%20VERSION.pdf) describes the local 10/20 kV distribution network.
-
-The [U.S. Department of Energy synchrophasor primer](https://www.energy.gov/oe/articles/synchrophasor-technologies-and-their-deployment-recovery-act-smart-grid-programs-august) explains PMUs, phasors, time alignment, and reporting speed.
-
-[IEEE/IEC 60255-118-1](https://standards.ieee.org/ieee/60255-118-1/5724/) defines synchronized phasor, frequency, RoCoF, and time-tag requirements.
-
-[IEC 61000-4-30](https://webstore.iec.ch/en/publication/68642) covers the measurement of voltage dips, swells, frequency, and other power-quality values. [IEEE 1159](https://standards.ieee.org/ieee/1159/6124/) gives recommended practices for monitoring electric power quality.
-
-The [ENTSO-E Continental Europe explanation](https://www.entsoe.eu/news/2021/01/26/system-separation-in-the-continental-europe-synchronous-area-on-8-january-2021-2nd-update/) explains why connected countries normally share one frequency.
