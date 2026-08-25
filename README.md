@@ -23,7 +23,7 @@ Set `POSTGRES_USER` and `POSTGRES_PASSWORD` in `.env`.
 ./start.sh
 ```
 
-This builds and starts Kafka, PostgreSQL, the Flink cluster and all three Flink jobs, the backend, and the frontend. It waits for the jobs to be submitted before starting the Python PMU producer in the terminal.
+This builds and starts Kafka, PostgreSQL, the Flink cluster and all three Flink jobs, the backend, and the frontend. An idempotent initialization service creates the required Kafka topics before any consumers start. The Python PMU producer starts only after all three Flink jobs report the `RUNNING` state; startup exits with an error if they do not become ready within two minutes.
 
 The dashboard is available at `http://localhost:5173`, the backend API at `http://localhost:8080`, and the Flink dashboard at `http://localhost:8081`. Stop the producer with `Ctrl+C`; the Docker services continue running until they are stopped separately.
 
@@ -32,13 +32,10 @@ docker compose logs -f flink-jobmanager flink-taskmanager backend frontend
 docker compose down
 ```
 
-Kafka normally creates topics when first used. They can also be created explicitly:
+Kafka topics are created automatically during startup. To inspect them:
 
 ```sh
-docker exec kafka kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic pmu-measurements
-docker exec kafka kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic fault-alerts
-docker exec kafka kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic frequency-alerts
-docker exec kafka kafka-topics --bootstrap-server kafka:9093 --create --if-not-exists --topic system-metrics
+docker exec kafka kafka-topics --bootstrap-server kafka:9093 --list
 ```
 
 ## REST API
