@@ -63,8 +63,8 @@ public class FaultDetectionFunction implements FlatMapFunction<Measurement, Faul
     }
 
     private double calculateCurrentSeverity(double current, double threshold) {
-        double severity = (current - AppConfig.NOMINAL_CURRENT) /
-                (AppConfig.OVERCURRENT_THRESHOLD - AppConfig.NOMINAL_CURRENT);
+        double severityRange = threshold - AppConfig.NOMINAL_CURRENT;
+        double severity = (current - threshold) / severityRange;
         return Math.min(1.0, Math.max(0.0, severity));
     }
 }

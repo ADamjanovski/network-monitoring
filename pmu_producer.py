@@ -6,6 +6,29 @@ from datetime import datetime, timezone
 from kafka import KafkaProducer
 
 
+VOLTAGE_ANOMALY_PROBABILITY = 0.005
+CURRENT_ANOMALY_PROBABILITY = 0.005
+FREQUENCY_ANOMALY_PROBABILITY = 0.01
+
+MIN_GENERATED_SEVERITY = 0.05
+MAX_GENERATED_SEVERITY = 1.0
+VOLTAGE_THRESHOLD_DEVIATION_PU = 0.10
+VOLTAGE_SEVERITY_SPAN_PU = 0.10
+OVERCURRENT_THRESHOLD_PU = 3.0
+OVERCURRENT_SEVERITY_SPAN_PU = 2.0
+
+
+def voltage_anomaly_variation(severity, is_sag):
+    deviation = VOLTAGE_THRESHOLD_DEVIATION_PU + severity * VOLTAGE_SEVERITY_SPAN_PU
+    return -deviation if is_sag else deviation
+
+
+def overcurrent_anomaly_magnitude(base_current, severity):
+    threshold = base_current * OVERCURRENT_THRESHOLD_PU
+    severity_span = base_current * OVERCURRENT_SEVERITY_SPAN_PU
+    return threshold + severity * severity_span
+
+
 class PMUDataProducer:
     
     def __init__(self, kafka_bootstrap_servers: str , 
@@ -51,28 +74,26 @@ class PMUDataProducer:
         voltage_variation = random.uniform(-0.02, 0.02)  
         current_variation = random.uniform(-50,50)
         frequency_variation = random.uniform(-0.005, 0.005)  
-        
-        anomaly_chance =random.random()
 
-        if anomaly_chance < 0.005:
-            if random.random() < 0.5:
-                voltage_variation = random.uniform(-0.15, -0.11) ## VOLTAGE SAG
-            else:
-                voltage_variation = random.uniform(0.11, 0.15) ## VOLTAGE SWELL
-            
-        if anomaly_chance < 0.005: 
-            current_variation = random.uniform(400, 900)
-            
-        if anomaly_chance < 0.01: 
+        if random.random() < VOLTAGE_ANOMALY_PROBABILITY:
+            severity = random.uniform(MIN_GENERATED_SEVERITY, MAX_GENERATED_SEVERITY)
+            voltage_variation = voltage_anomaly_variation(
+                severity,
+                is_sag=random.random() < 0.5,
+            )
+
+        current = pmu_config['base_current'] + current_variation
+        if random.random() < CURRENT_ANOMALY_PROBABILITY:
+            severity = random.uniform(MIN_GENERATED_SEVERITY, MAX_GENERATED_SEVERITY)
+            current = overcurrent_anomaly_magnitude(pmu_config['base_current'], severity)
+
+        if random.random() < FREQUENCY_ANOMALY_PROBABILITY:
             if random.random() < 0.5:
                 frequency_variation = random.uniform(-0.25, -0.21)
             else:
                 frequency_variation = random.uniform(0.21, 0.25)
-            
-
 
         voltage = pmu_config['base_voltage'] * (1 + voltage_variation)
-        current = pmu_config['base_current'] + current_variation
         frequency = self.system_frequency + frequency_variation
         
         timestamp = int(datetime.now(timezone.utc).timestamp()*1000)
@@ -212,4 +233,3 @@ if __name__ == '__main__':
     )
     
     producer.produce_measurements()
-

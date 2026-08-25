@@ -1,5 +1,7 @@
 # .gitignore
 venv/
+__pycache__/
+*.py[cod]
 .idea/
 .history/
 .env
