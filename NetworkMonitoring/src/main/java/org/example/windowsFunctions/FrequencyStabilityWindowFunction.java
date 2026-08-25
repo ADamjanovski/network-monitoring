@@ -10,7 +10,10 @@ import org.example.models.enums.FrequencyAlertType;
 import org.example.models.enums.SeverityLevel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 public class FrequencyStabilityWindowFunction extends
@@ -25,13 +28,13 @@ public class FrequencyStabilityWindowFunction extends
 
         List<Measurement> windowData = new ArrayList<>();
         measurements.forEach(windowData::add);
-        if (windowData.size() < 10) return;
 
-        windowData.sort((a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
+        List<ReportingFrame> frames = aggregateReportingFrames(windowData);
+        if (frames.size() < 2) return;
 
-        FrequencyStatistics stats = calculateFrequencyStatistics(windowData);
-        double rocof           = calculateRoCoF(windowData);
-        double rocofVolatility = calculateRoCoFVolatility(windowData, rocof);
+        FrequencyStatistics stats = calculateFrequencyStatistics(frames);
+        double rocof           = calculateRoCoF(frames);
+        double rocofVolatility = calculateRoCoFVolatility(frames, rocof);
 
         boolean hasFrequencyDeviation = Math.abs(stats.average - AppConfig.NOMINAL_FREQUENCY) > AppConfig.FREQ_WARNING_THRESHOLD;
         boolean hasCriticalRoCoF      = Math.abs(rocof) > AppConfig.ROCOF_CRITICAL_THRESHOLD;
@@ -84,15 +87,41 @@ public class FrequencyStabilityWindowFunction extends
         out.collect(alert);
     }
 
-    private double calculateRoCoF(List<Measurement> data) {
-        int n = data.size();
-        long baseTime = data.get(0).getTimestamp();
+    static List<ReportingFrame> aggregateReportingFrames(List<Measurement> measurements) {
+        Map<Long, List<Double>> frequenciesByTimestamp = new TreeMap<>();
+
+        for (Measurement measurement : measurements) {
+            double frequency = measurement.getFrequency();
+            if (Double.isNaN(frequency) || Double.isInfinite(frequency)) continue;
+
+            frequenciesByTimestamp
+                    .computeIfAbsent(measurement.getTimestamp(), ignored -> new ArrayList<>())
+                    .add(frequency);
+        }
+
+        List<ReportingFrame> frames = new ArrayList<>();
+        for (Map.Entry<Long, List<Double>> entry : frequenciesByTimestamp.entrySet()) {
+            List<Double> frameFrequencies = entry.getValue();
+            Collections.sort(frameFrequencies);
+            int middle = frameFrequencies.size() / 2;
+            double median = frameFrequencies.size() % 2 == 0
+                    ? (frameFrequencies.get(middle - 1) + frameFrequencies.get(middle)) / 2.0
+                    : frameFrequencies.get(middle);
+            frames.add(new ReportingFrame(entry.getKey(), median));
+        }
+
+        return frames;
+    }
+
+    static double calculateRoCoF(List<ReportingFrame> frames) {
+        int n = frames.size();
+        long baseTime = frames.get(0).timestamp;
 
         double sumT = 0, sumF = 0, sumTF = 0, sumT2 = 0;
 
-        for (Measurement m : data) {
-            double t = (m.getTimestamp() - baseTime) / 1000.0;
-            double f = m.getFrequency();
+        for (ReportingFrame frame : frames) {
+            double t = (frame.timestamp - baseTime) / 1000.0;
+            double f = frame.frequency;
             sumT  += t;
             sumF  += f;
             sumTF += t * f;
@@ -105,13 +134,13 @@ public class FrequencyStabilityWindowFunction extends
         return (n * sumTF - sumT * sumF) / denominator;
     }
 
-    private double calculateRoCoFVolatility(List<Measurement> data, double avgRocof) {
-        if (data.size() < 2) return 0.0;
+    static double calculateRoCoFVolatility(List<ReportingFrame> frames, double avgRocof) {
+        if (frames.size() < 2) return 0.0;
 
         List<Double> instantRocofs = new ArrayList<>();
-        for (int i = 1; i < data.size(); i++) {
-            double dt = (data.get(i).getTimestamp() - data.get(i - 1).getTimestamp()) / 1000.0;
-            double df =  data.get(i).getFrequency()  - data.get(i - 1).getFrequency();
+        for (int i = 1; i < frames.size(); i++) {
+            double dt = (frames.get(i).timestamp - frames.get(i - 1).timestamp) / 1000.0;
+            double df = frames.get(i).frequency - frames.get(i - 1).frequency;
             if (dt > 0) instantRocofs.add(df / dt);
         }
 
@@ -126,15 +155,15 @@ public class FrequencyStabilityWindowFunction extends
         return Math.sqrt(sumSquaredDiff / instantRocofs.size());
     }
 
-    private FrequencyStatistics calculateFrequencyStatistics(List<Measurement> data) {
+    private FrequencyStatistics calculateFrequencyStatistics(List<ReportingFrame> frames) {
         double sum = 0, min = Double.MAX_VALUE, max = -Double.MAX_VALUE;
-        for (Measurement m : data) {
-            double f = m.getFrequency();
+        for (ReportingFrame frame : frames) {
+            double f = frame.frequency;
             sum += f;
             if (f < min) min = f;
             if (f > max) max = f;
         }
-        return new FrequencyStatistics(sum / data.size(), min, max);
+        return new FrequencyStatistics(sum / frames.size(), min, max);
     }
 
     private double calculateSeverity(double avgFrequency, double rocof, boolean isCritical) {
@@ -142,6 +171,16 @@ public class FrequencyStabilityWindowFunction extends
         double rocofScore = Math.min(1.0, Math.abs(rocof) / AppConfig.ROCOF_CRITICAL_THRESHOLD);
         double severity   = 0.4 * freqScore + 0.6 * rocofScore;
         return isCritical ? Math.min(1.0, severity * 1.3) : severity;
+    }
+
+    static class ReportingFrame {
+        final long timestamp;
+        final double frequency;
+
+        ReportingFrame(long timestamp, double frequency) {
+            this.timestamp = timestamp;
+            this.frequency = frequency;
+        }
     }
 
     private static class FrequencyStatistics {

@@ -34,6 +34,15 @@ class PMUProducerSeverityTest(unittest.TestCase):
             self.assertAlmostEqual(score, (swell_voltage - 22000.0) / 2000.0)
             self.assertAlmostEqual(score, (current - 1200.0) / 800.0)
 
+    def test_all_measurements_in_a_batch_share_one_timestamp(self):
+        second_pmu = dict(self.pmu_config, pmu_id='test-pmu-2')
+        self.producer.pmu_configs = [self.pmu_config, second_pmu]
+
+        measurements = self.producer.generate_measurement_batch(batch_timestamp=123456789)
+
+        self.assertEqual(2, len(measurements))
+        self.assertEqual({123456789}, {item['timestamp'] for item in measurements})
+
     @patch('pmu_producer.random.uniform')
     @patch('pmu_producer.random.random', side_effect=(0.0, 0.0, 1.0, 1.0))
     def test_voltage_anomaly_does_not_force_current_anomaly(self, _random, uniform):

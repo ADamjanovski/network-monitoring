@@ -111,6 +111,18 @@ class PMUDataProducer:
         }
         
         return measurement
+
+    def generate_measurement_batch(self, batch_timestamp=None):
+        if batch_timestamp is None:
+            batch_timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+
+        measurements = []
+        for pmu in self.pmu_configs:
+            measurement = self.generate_measurement(pmu)
+            measurement['timestamp'] = batch_timestamp
+            measurements.append(measurement)
+
+        return measurements
     
     def produce_measurements(self):
         print("Starting to send measurements to Kafka")
@@ -125,11 +137,7 @@ class PMUDataProducer:
         # --- END FREQUENCY STATE ---
 
         while True:
-            batch_timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
-
-            for i, pmu in enumerate(self.pmu_configs):
-                measurement = self.generate_measurement(pmu)
-                measurement["timestamp"] = batch_timestamp + i
+            for measurement in self.generate_measurement_batch():
                 self.producer.send(
                     topic=self.topic,
                     value=json.dumps(measurement).encode("utf-8")
